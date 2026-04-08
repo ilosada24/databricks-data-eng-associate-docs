@@ -451,7 +451,51 @@ An LDP pipeline runs as a task within a Lakeflow Job.
 
 ---
 
-## 4.10 Common Exam Traps
+## 4.10 Notebook Orchestration: %run vs dbutils.notebook.run()
+
+Two ways to call one notebook from another — different behavior, frequently tested.
+
+### `%run` — static inclusion
+
+```python
+# Call another notebook (like a Python import)
+%run ./helpers/common_functions
+
+# After %run, all variables/functions defined in that notebook are available here
+result = my_helper_function(data)   # defined in common_functions notebook
+```
+
+### `dbutils.notebook.run()` — dynamic execution
+
+```python
+# Run a notebook in an isolated scope; returns a string result
+result = dbutils.notebook.run(
+    "./transform_silver",        # notebook path
+    timeout_seconds=300,         # max execution time
+    arguments={"catalog": "main", "date": "2024-01-15"}  # parameters
+)
+print(result)  # string returned by dbutils.notebook.exit() in the child
+
+# In the child notebook:
+dbutils.notebook.exit("success")   # return a value to the caller
+```
+
+### Comparison
+
+| | `%run` | `dbutils.notebook.run()` |
+|--|--------|--------------------------|
+| Execution scope | **Shared** — variables flow into calling notebook | **Isolated** — separate scope, no variable sharing |
+| Return value | None (shared scope, so variables are just available) | String (via `dbutils.notebook.exit()`) |
+| Parameters | No — uses shared scope | Yes — `arguments` dict (read with `dbutils.widgets.get()`) |
+| Path resolution | Relative to current notebook | Relative to current notebook or absolute |
+| Error handling | Failure stops the calling notebook | Raises exception; can be caught with try/except |
+| Use case | Shared utilities, constants, imports | Modular pipeline steps, dynamic orchestration |
+
+> **Exam tip:** `%run` is like `import` — shares scope. `dbutils.notebook.run()` is like calling a subprocess — isolated, returns a string, accepts parameters.
+
+---
+
+## 4.11 Common Exam Traps
 
 | Trap | Correct answer |
 |------|---------------|
@@ -462,3 +506,5 @@ An LDP pipeline runs as a task within a Lakeflow Job.
 | "Task values are shared across all tasks in the job" | True, but a task must explicitly call `dbutils.jobs.taskValues.set()` to share values |
 | "ForEach `concurrency: 1` = sequential processing" | True — concurrency=1 processes one item at a time |
 | "File arrival trigger processes all existing files" | False — only files that arrive AFTER the trigger is activated |
+| "`%run` passes parameters to the called notebook" | False — `%run` shares scope; use `dbutils.notebook.run()` for parameters |
+| "`dbutils.notebook.run()` shares variables with the caller" | False — it runs in an isolated scope; only returns a string via `dbutils.notebook.exit()` |

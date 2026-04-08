@@ -521,7 +521,99 @@ WHERE event_type IS NOT NULL;
 
 ---
 
-## 2.9 Common Exam Traps
+## 2.9 Structured Streaming Deep Dive
+
+### Output modes
+
+| Mode | Behavior | Use with |
+|------|----------|----------|
+| `append` (default) | Only new rows since last trigger are written | Append-only sources (Auto Loader, Kafka); cannot use with aggregations that update |
+| `complete` | Entire result table is rewritten every trigger | Aggregations (`groupBy`); output = full aggregate result |
+| `update` | Only rows that changed since last trigger are written | Aggregations where you only need changed results; more efficient than complete |
+
+```python
+# Append mode (default for streaming to Delta)
+query = df.writeStream.outputMode("append").table("target")
+
+# Complete mode (required for running aggregations)
+agg = df.groupBy("region").count()
+query = agg.writeStream.outputMode("complete").table("region_counts")
+
+# Update mode (only changed aggregates)
+query = agg.writeStream.outputMode("update").table("region_counts")
+```
+
+### Watermarks (late data handling)
+
+Watermarks tell Spark how long to wait for late-arriving data before finalizing a window.
+
+```python
+from pyspark.sql.functions import window, col
+
+# Accept data up to 10 minutes late
+windowed = (spark.readStream
+    .format("delta")
+    .table("main.bronze.events")
+    .withWatermark("event_time", "10 minutes")     # watermark column + threshold
+    .groupBy(window("event_time", "5 minutes"))    # tumbling window
+    .count())
+
+windowed.writeStream.outputMode("append").table("main.silver.event_counts")
+```
+
+**Key watermark behaviors:**
+- Data arriving **within** the watermark threshold is included in the window
+- Data arriving **after** the threshold is dropped (too late)
+- Without watermark: Spark keeps all state forever → memory grows unbounded
+- With watermark: Spark can clean up old state → bounded memory
+
+### foreachBatch pattern
+
+`foreachBatch` lets you apply **arbitrary batch operations** to each micro-batch of a stream — useful for MERGE, JDBC writes, or multi-table writes.
+
+```python
+def upsert_to_silver(batch_df, batch_id):
+    """Apply MERGE logic to each micro-batch."""
+    batch_df.createOrReplaceTempView("updates")
+    batch_df._jdf.sparkSession().sql("""
+        MERGE INTO main.silver.orders AS target
+        USING updates AS source
+        ON target.order_id = source.order_id
+        WHEN MATCHED THEN UPDATE SET *
+        WHEN NOT MATCHED THEN INSERT *
+    """)
+
+(spark.readStream
+    .format("cloudFiles")
+    .option("cloudFiles.format", "json")
+    .option("cloudFiles.schemaLocation", "/ckpt/schema")
+    .load("/landing/orders/")
+ .writeStream
+    .foreachBatch(upsert_to_silver)
+    .option("checkpointLocation", "/ckpt/silver_orders")
+    .trigger(availableNow=True)
+    .start())
+```
+
+**Use `foreachBatch` when:**
+- You need MERGE (upsert) logic on a streaming source
+- You need to write to multiple tables per micro-batch
+- You need to call an external API per batch
+- You need to write to a JDBC sink
+
+### Exactly-once semantics
+
+| Component | Guarantees |
+|-----------|-----------|
+| **Checkpoint** | Tracks which data has been processed (no re-processing on restart) |
+| **Idempotent sink** | Delta Lake writes are atomic — partial writes are rolled back |
+| **Checkpoint + Delta sink** | Together provide **exactly-once** end-to-end |
+
+> **Exam tip:** Exactly-once requires both a checkpoint (source side) and an idempotent sink (target side). Delta Lake is an idempotent sink by design.
+
+---
+
+## 2.10 Common Exam Traps
 
 | Trap | Correct answer |
 |------|---------------|
@@ -531,3 +623,6 @@ WHERE event_type IS NOT NULL;
 | "`availableNow=True` is the same as `once=True`" | Not exactly — `availableNow` uses multiple micro-batches (more efficient for large backlogs) |
 | "File notification mode requires no cloud setup" | False — requires cloud event infrastructure (EventBridge, Event Grid, Pub/Sub) |
 | "JDBC parallel read works with just `numPartitions`" | False — also needs `partitionColumn`, `lowerBound`, `upperBound` |
+| "`append` output mode works with aggregations" | False — aggregations need `complete` or `update` output mode |
+| "Watermarks guarantee no late data is lost" | False — data arriving after the watermark threshold is intentionally dropped |
+| "`foreachBatch` only works with Delta sinks" | False — `foreachBatch` can write to any sink (JDBC, API, multi-table, etc.) |

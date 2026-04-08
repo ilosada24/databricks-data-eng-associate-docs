@@ -264,6 +264,80 @@ CREATE TABLE main.dev.orders_shallow SHALLOW CLONE main.silver.orders;
 | Independence | Fully independent | Reads from source files |
 | Use case | Backup, migration, isolated testing | Quick testing, schema exploration |
 
+### Change Data Feed (CDF)
+
+Change Data Feed records **row-level changes** (inserts, updates, deletes) to a Delta table, enabling downstream consumers to process only what changed.
+
+```sql
+-- Enable CDF on a table
+ALTER TABLE main.silver.orders
+SET TBLPROPERTIES ('delta.enableChangeDataFeed' = true);
+
+-- Create table with CDF enabled from the start
+CREATE TABLE main.silver.events
+(event_id STRING, amount DOUBLE, status STRING)
+TBLPROPERTIES ('delta.enableChangeDataFeed' = true);
+
+-- Read changes between versions
+SELECT * FROM table_changes('main.silver.orders', 2, 5);
+
+-- Read changes between timestamps
+SELECT * FROM table_changes('main.silver.orders', '2024-01-01', '2024-01-02');
+```
+
+**CDF adds metadata columns to the change output:**
+
+| Column | Values |
+|--------|--------|
+| `_change_type` | `insert`, `update_preimage`, `update_postimage`, `delete` |
+| `_commit_version` | Delta version number of the change |
+| `_commit_timestamp` | Timestamp of the change |
+
+```python
+# Read CDF as a streaming source (incremental CDC processing)
+changes = (spark.readStream
+    .format("delta")
+    .option("readChangeFeed", "true")
+    .option("startingVersion", 0)
+    .table("main.silver.orders"))
+
+# Filter for specific change types
+inserts = changes.filter(col("_change_type") == "insert")
+updates = changes.filter(col("_change_type") == "update_postimage")
+```
+
+> **Use cases:** Propagate incremental changes downstream, audit trail, CDC pipelines without full table scans.
+
+### Delta table properties reference
+
+| Property | Default | Purpose |
+|----------|---------|---------|
+| `delta.enableChangeDataFeed` | `false` | Enable row-level change tracking |
+| `delta.logRetentionDuration` | `interval 30 days` | How long transaction log entries are kept |
+| `delta.deletedFileRetentionDuration` | `interval 7 days` | How long deleted files are kept (VACUUM threshold) |
+| `delta.enablePredictiveOptimization` | `inherit` | Enable auto OPTIMIZE/VACUUM |
+| `delta.minReaderVersion` / `delta.minWriterVersion` | `1` / `2` | Protocol version (higher = more features, less backward compat) |
+
+```sql
+-- View all table properties
+SHOW TBLPROPERTIES main.silver.orders;
+
+-- Set a specific property
+ALTER TABLE main.silver.orders
+SET TBLPROPERTIES ('delta.logRetentionDuration' = 'interval 45 days');
+```
+
+### `CREATE OR REPLACE TABLE` vs `CREATE TABLE IF NOT EXISTS`
+
+| Statement | Behavior |
+|-----------|----------|
+| `CREATE TABLE t (...)` | Fails if table exists |
+| `CREATE TABLE IF NOT EXISTS t (...)` | Does nothing if table exists (no error, no overwrite) |
+| `CREATE OR REPLACE TABLE t (...)` | Drops and recreates table if it exists — **replaces data + schema** |
+| `CREATE OR REPLACE TABLE t AS SELECT ...` | Idempotent full refresh — always produces a fresh table |
+
+> **Exam tip:** `CREATE OR REPLACE TABLE` is idempotent and used for Gold layer full refreshes. `CREATE TABLE IF NOT EXISTS` is a no-op guard — it does NOT update the table if it already exists.
+
 ### Schema enforcement vs schema evolution
 
 **Schema enforcement (default):** Writes that don't match the table schema fail with `AnalysisException`.
@@ -431,10 +505,28 @@ Libraries:     Maven/PyPI/DBFS libraries installed on cluster
 ### Photon Engine
 
 - Vectorized query engine written in C++ — available as a DBR variant (e.g., `15.4.x-photon-scala2.12`)
-- Accelerates: Spark SQL, DataFrame operations, aggregations, joins, scans, `MERGE INTO`
 - **No code changes required** — drop-in acceleration
 - Billed at higher DBU rate, but faster execution reduces total cost for SQL-heavy workloads
-- Works with Delta Lake, Parquet, CSV, JSON
+
+| Photon accelerates | Photon does NOT accelerate |
+|--------------------|---------------------------|
+| Spark SQL queries | Python UDFs (row-by-row Python) |
+| DataFrame API operations | RDD operations |
+| Aggregations, joins, scans | ML model training (scikit-learn, etc.) |
+| `MERGE INTO`, `UPDATE`, `DELETE` | Pandas UDFs (Arrow path, not JVM) |
+| File scans: Delta, Parquet, CSV, JSON | Arbitrary Python/Scala code |
+
+> **Exam tip:** Photon accelerates **SQL/DataFrame** workloads only. Python UDFs and RDD operations bypass Photon entirely.
+
+### Instance Pool vs Serverless
+
+| | Instance Pool | Serverless Compute |
+|--|--------------|-------------------|
+| Startup time | Reduced (pre-provisioned VMs) | Near-instant (seconds) |
+| Management | You manage pool size and idle timeout | Databricks manages everything |
+| Custom config | Full control (init scripts, libraries) | No custom init scripts, no SSH |
+| Cost model | Idle instances billed at reduced rate | Billed per second of execution only |
+| Best for | Many short-lived job clusters with custom config | Zero-ops production pipelines |
 
 ---
 
@@ -465,3 +557,6 @@ Libraries:     Maven/PyPI/DBFS libraries installed on cluster
 | "`OPTIMIZE` applies Liquid Clustering automatically" | Liquid Clustering is applied **only when `OPTIMIZE` is run** — it's not applied on every write |
 | "Deep clone and shallow clone behave the same" | Deep clone = independent copy of data; Shallow clone = metadata only, shares source data files |
 | "Schema enforcement prevents all bad data" | Schema enforcement checks column names/types but NOT value validity — use constraints for that |
+| "CDF is enabled by default" | False — must explicitly set `delta.enableChangeDataFeed = true` |
+| "`CREATE TABLE IF NOT EXISTS` updates the table" | False — it's a no-op if the table exists; use `CREATE OR REPLACE TABLE` for idempotent recreation |
+| "Photon accelerates Python UDFs" | False — Photon only accelerates SQL/DataFrame operations, not Python UDFs or RDD ops |

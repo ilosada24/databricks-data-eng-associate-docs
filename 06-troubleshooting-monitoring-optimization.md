@@ -104,6 +104,32 @@ Physical Plan (bottom to top):
 - `FileScan` with `PartitionFilters`: partition pruning working ✓
 - `FileScan` with no `PartitionFilters`: full table scan → may need partition or clustering
 
+### Using `.explain()` from PySpark
+
+```python
+# Default: show physical plan only
+df.explain()
+
+# Extended: show parsed → analyzed → optimized → physical plans
+df.explain(True)
+df.explain(mode="extended")
+
+# Formatted: human-readable with section headers
+df.explain(mode="formatted")
+
+# Cost-based: includes estimated row counts and sizes
+df.explain(mode="cost")
+```
+
+**What to look for in `.explain()` output:**
+- `BroadcastHashJoin` = good (small table broadcast, no shuffle)
+- `SortMergeJoin` = may be slow for large joins (full shuffle both sides)
+- `Filter` pushed into `FileScan` = predicate pushdown working
+- `Exchange hashpartitioning` = shuffle is happening (check data size)
+- `Project` = column projection (only reading needed columns = good)
+
+> **Exam tip:** `.explain()` shows the query plan without executing the query — useful for debugging performance before running expensive operations.
+
 ### Identifying data skew
 
 **Where to look:** Stages tab → click a stage → task duration histogram

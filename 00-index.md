@@ -7,17 +7,37 @@
 
 ---
 
-## Exam Domains
+## Exam-Day Strategy
 
-| # | Domain | Key topics |
-|---|--------|-----------|
-| 1 | [Databricks Intelligence Platform](./01-databricks-intelligence-platform.md) | Delta Lake, UC, compute types, DBR, Liquid Clustering, DML, cloning |
-| 2 | [Data Ingestion and Loading](./02-data-ingestion-and-loading.md) | Auto Loader, COPY INTO, LDP, Lakeflow Connect, JDBC, schema evolution |
-| 3 | [Data Transformation and Modeling](./03-data-transformation-and-modeling.md) | PySpark joins/aggregations, UDFs, Spark tuning, AQE, Gold layer objects |
-| 4 | [Working with Lakeflow Jobs](./04-working-with-lakeflow-jobs.md) | DAG tasks, triggers, control flow, task values, repair runs |
-| 5 | [Implementing CI/CD](./05-implementing-cicd.md) | Databricks Repos, Declarative Automation Bundles, Databricks CLI |
-| 6 | [Troubleshooting, Monitoring & Optimization](./06-troubleshooting-monitoring-optimization.md) | Spark UI, AQE, Liquid Clustering, predictive optimization, OOM/library failures |
-| 7 | [Governance and Security](./07-governance-and-security.md) | Managed/external tables, GRANT/REVOKE/DENY, column masking, RLS, ABAC, lineage |
+| Tip | Detail |
+|-----|--------|
+| **Time budget** | 45 questions / 90 min = **2 minutes per question** — flag and move on if stuck |
+| **First pass** | Answer everything you're confident about (~60-70% of questions) |
+| **Second pass** | Return to flagged questions with remaining time |
+| **Elimination** | Rule out 1-2 wrong options first — the exam loves plausible-sounding distractors |
+| **"Best" questions** | When asked "which is the BEST approach", look for the most specific/efficient option |
+| **Trap words** | Watch for "always", "never", "only", "all" — these are often in wrong answers |
+| **Read all options** | Don't pick the first right-looking answer — there may be a better one |
+
+---
+
+## Exam Domains (Approximate Weights)
+
+| # | Domain | ~Weight | Key topics |
+|---|--------|---------|-----------|
+| 1 | [Databricks Intelligence Platform](./01-databricks-intelligence-platform.md) | ~20% | Delta Lake, UC, compute types, DBR, Liquid Clustering, DML, cloning, CDF |
+| 2 | [Data Ingestion and Loading](./02-data-ingestion-and-loading.md) | ~20% | Auto Loader, COPY INTO, LDP, Lakeflow Connect, JDBC, schema evolution, streaming |
+| 3 | [Data Transformation and Modeling](./03-data-transformation-and-modeling.md) | ~18% | PySpark joins/aggregations, UDFs, Spark tuning, AQE, Gold layer, CTEs, PIVOT, SCD |
+| 4 | [Working with Lakeflow Jobs](./04-working-with-lakeflow-jobs.md) | ~12% | DAG tasks, triggers, control flow, task values, repair runs, notebook orchestration |
+| 5 | [Implementing CI/CD](./05-implementing-cicd.md) | ~10% | Databricks Repos, Declarative Automation Bundles, Databricks CLI |
+| 6 | [Troubleshooting, Monitoring & Optimization](./06-troubleshooting-monitoring-optimization.md) | ~10% | Spark UI, AQE, Liquid Clustering, predictive optimization, OOM/library failures |
+| 7 | [Governance and Security](./07-governance-and-security.md) | ~10% | Managed/external tables, GRANT/REVOKE/DENY, column masking, RLS, ABAC, lineage |
+
+**Supplementary sections:**
+| # | Section | Content |
+|---|---------|---------|
+| 8 | [dbutils and Notebook Features](./08-dbutils-and-notebook-features.md) | Widgets, file system, secrets, magic commands, display() |
+| 9 | [Practice Questions](./09-practice-questions.md) | 35 multiple-choice questions with answers (5 per domain) |
 
 ---
 
@@ -143,6 +163,30 @@ INSERT OVERWRITE table SELECT * FROM source;
 | Managed | Deletes **metadata + data files** (permanent!) |
 | External | Deletes **metadata only** (data at LOCATION survives) |
 
+### Streaming output modes
+
+| Mode | Behavior | Use with |
+|------|----------|----------|
+| `append` | Only new rows (default) | Append-only sources, no aggregations |
+| `complete` | Full result rewritten each batch | Aggregations (groupBy) |
+| `update` | Only changed rows | Aggregations (more efficient than complete) |
+
+### Temp view vs Global temp view
+
+| | Temp view | Global temp view |
+|--|-----------|-----------------|
+| Scope | Session (one notebook) | Cluster-wide |
+| Access | Direct name | `global_temp.` prefix required |
+| Survives restart | No | No |
+
+### coalesce() vs repartition()
+
+| | `coalesce(n)` | `repartition(n)` |
+|--|--------------|------------------|
+| Shuffle | No (narrow) | Yes (wide) |
+| Direction | Decrease only | Increase or decrease |
+| Balance | Uneven | Even |
+
 ### LDP expectations behavior
 
 | Expectation | On violation |
@@ -189,3 +233,13 @@ INSERT OVERWRITE table SELECT * FROM source;
 | 18 | "Deep clone and shallow clone both copy data" | No — shallow clone copies metadata only |
 | 19 | "`GRANT SELECT ON SCHEMA` covers views too" | Yes — views in the schema are included |
 | 20 | "File notification mode requires no cloud setup" | No — needs EventBridge/Event Grid/Pub/Sub configured |
+| 21 | "Global temp views are accessed by name directly" | No — must use `global_temp.view_name` prefix |
+| 22 | "`coalesce()` can increase partitions" | No — `coalesce()` only decreases; `repartition()` for increase |
+| 23 | "CTEs cache their intermediate results" | No — CTEs are syntactic sugar, inlined by optimizer |
+| 24 | "CDF is enabled by default on Delta tables" | No — must set `delta.enableChangeDataFeed = true` |
+| 25 | "`%run` passes parameters to the called notebook" | No — `%run` shares scope; use `dbutils.notebook.run()` for params |
+| 26 | "`CREATE TABLE IF NOT EXISTS` updates existing tables" | No — it's a no-op if the table exists |
+| 27 | "Photon accelerates Python UDFs" | No — Photon only accelerates SQL/DataFrame ops |
+| 28 | "`dbutils.notebook.exit()` can return any data type" | No — only returns a string |
+| 29 | "`%pip install` affects all notebooks on the cluster" | No — it's session-scoped (one notebook) |
+| 30 | "`append` output mode works with streaming aggregations" | No — aggregations need `complete` or `update` mode |

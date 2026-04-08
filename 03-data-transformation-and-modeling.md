@@ -699,7 +699,249 @@ AS SELECT * FROM cloud_files('/Volumes/main/landing/clickstream/', 'json');
 
 ---
 
-## 3.9 Data Quality Checks and Validation
+## 3.9 Temp Views and Global Temp Views
+
+Views created at session scope — not registered in Unity Catalog, not persisted to storage.
+
+### Temp view (session-scoped)
+
+```sql
+-- SQL
+CREATE OR REPLACE TEMP VIEW active_orders AS
+SELECT * FROM main.silver.orders WHERE status = 'active';
+
+-- Use it in the same session
+SELECT COUNT(*) FROM active_orders;
+```
+
+```python
+# PySpark
+df.createOrReplaceTempView("active_orders")
+spark.sql("SELECT * FROM active_orders").show()
+```
+
+**Lifetime:** Exists only for the current SparkSession (notebook/job). Destroyed when session ends or cluster restarts.
+
+### Global temp view (cluster-scoped)
+
+```sql
+-- SQL — note: must query via global_temp database
+CREATE OR REPLACE GLOBAL TEMP VIEW shared_lookup AS
+SELECT id, name FROM main.silver.products;
+
+-- Access from ANY notebook on the same cluster
+SELECT * FROM global_temp.shared_lookup;
+```
+
+```python
+# PySpark
+df.createOrReplaceGlobalTempView("shared_lookup")
+spark.sql("SELECT * FROM global_temp.shared_lookup").show()
+```
+
+**Lifetime:** Exists for the lifetime of the Spark application (cluster). Accessible from all notebooks attached to that cluster.
+
+### View type comparison
+
+| | Temp view | Global temp view | Permanent view (UC) |
+|--|-----------|-----------------|---------------------|
+| Scope | SparkSession (one notebook) | Spark application (cluster-wide) | Unity Catalog (persistent) |
+| Access prefix | None (direct name) | `global_temp.` prefix **required** | `catalog.schema.view_name` |
+| Stored in UC | No | No | Yes |
+| Survives cluster restart | No | No | Yes |
+| Created by | `CREATE TEMP VIEW` | `CREATE GLOBAL TEMP VIEW` | `CREATE VIEW` |
+| PySpark | `.createOrReplaceTempView()` | `.createOrReplaceGlobalTempView()` | `.saveAsTable()` with SQL DDL |
+
+> **Exam trap:** Global temp views MUST be queried with the `global_temp` prefix. `SELECT * FROM my_global_view` will fail — use `SELECT * FROM global_temp.my_global_view`.
+
+---
+
+## 3.10 CTEs (Common Table Expressions)
+
+CTEs provide a readable way to define temporary result sets within a single query using the `WITH` clause.
+
+```sql
+-- Basic CTE
+WITH recent_orders AS (
+    SELECT * FROM main.silver.orders
+    WHERE order_date >= '2024-01-01'
+)
+SELECT customer_id, SUM(amount) AS total
+FROM recent_orders
+GROUP BY customer_id;
+
+-- Multiple CTEs (chained)
+WITH filtered AS (
+    SELECT * FROM main.silver.orders WHERE status = 'active'
+),
+aggregated AS (
+    SELECT customer_id, COUNT(*) AS order_count, SUM(amount) AS total
+    FROM filtered
+    GROUP BY customer_id
+)
+SELECT a.*, c.email
+FROM aggregated a
+JOIN main.silver.customers c ON a.customer_id = c.customer_id
+WHERE a.total > 1000;
+
+-- Nested CTE referencing a previous CTE
+WITH bronze AS (
+    SELECT * FROM main.bronze.events
+),
+silver AS (
+    SELECT event_id, event_type, amount
+    FROM bronze
+    WHERE event_id IS NOT NULL AND amount > 0
+)
+SELECT event_type, AVG(amount) FROM silver GROUP BY event_type;
+```
+
+> **Note:** Spark SQL does NOT support recursive CTEs. CTEs are syntactic sugar — they don't cache the result.
+
+---
+
+## 3.11 PIVOT and UNPIVOT
+
+### PIVOT (rows to columns)
+
+```sql
+-- Pivot: turn region values into column names
+SELECT *
+FROM (
+    SELECT region, product, revenue
+    FROM main.silver.sales
+)
+PIVOT (
+    SUM(revenue)
+    FOR region IN ('US' AS us, 'EU' AS eu, 'APAC' AS apac)
+);
+-- Result: product | us | eu | apac
+```
+
+```python
+# PySpark PIVOT
+(df.groupBy("product")
+   .pivot("region", ["US", "EU", "APAC"])
+   .agg({"revenue": "sum"})
+   .show())
+```
+
+### UNPIVOT (columns to rows)
+
+```sql
+-- Unpivot: turn columns back into rows
+SELECT *
+FROM main.gold.sales_wide
+UNPIVOT (
+    revenue FOR region IN (us, eu, apac)
+);
+-- Result: product | region | revenue
+```
+
+> **Exam tip:** PIVOT requires an aggregate function (`SUM`, `COUNT`, `AVG`, etc.). UNPIVOT reverses a PIVOT — turns wide tables into tall/narrow format.
+
+---
+
+## 3.12 coalesce() vs repartition()
+
+Both change the number of partitions in a DataFrame, but they work differently.
+
+| | `coalesce(n)` | `repartition(n)` / `repartition(n, col)` |
+|--|--------------|------------------------------------------|
+| Shuffle | **No shuffle** (narrow transformation) | **Full shuffle** (wide transformation) |
+| Direction | Can only **decrease** partitions | Can **increase or decrease** partitions |
+| Balance | Uneven — combines existing partitions | Even — redistributes data uniformly |
+| Use case | Reduce partitions before writing (avoid small files) | Rebalance skewed data; partition by column for joins |
+
+```python
+# coalesce: reduce partitions without shuffle (fast, uneven)
+df.coalesce(10).write.mode("overwrite").saveAsTable("main.silver.orders")
+
+# repartition: full shuffle to n even partitions
+df.repartition(100).write.mode("overwrite").saveAsTable("main.silver.orders")
+
+# repartition by column: co-locate data for downstream joins
+df.repartition(100, col("customer_id")).write.saveAsTable("main.silver.orders")
+
+# Check current partition count
+df.rdd.getNumPartitions()
+```
+
+> **Exam tip:** Use `coalesce()` to reduce file count before writing. Use `repartition()` when you need to increase partitions or need even distribution. `coalesce(1)` creates a single file (useful for small exports but bad for parallelism).
+
+---
+
+## 3.13 SCD Type 1 vs Type 2
+
+Slowly Changing Dimensions (SCD) are patterns for handling changes in dimension tables.
+
+### SCD Type 1 — Overwrite (no history)
+
+Replace old values with new values. No history preserved.
+
+```sql
+-- SCD Type 1: overwrite changed rows, insert new rows
+MERGE INTO main.gold.dim_customer AS target
+USING main.silver.customers AS source
+ON target.customer_id = source.customer_id
+WHEN MATCHED THEN
+    UPDATE SET
+        target.name    = source.name,
+        target.email   = source.email,
+        target.address = source.address,
+        target.updated_at = current_timestamp()
+WHEN NOT MATCHED THEN
+    INSERT (customer_id, name, email, address, created_at, updated_at)
+    VALUES (source.customer_id, source.name, source.email, source.address,
+            current_timestamp(), current_timestamp());
+```
+
+### SCD Type 2 — Add new row (preserve history)
+
+Insert a new row for each change. Old rows are marked as inactive.
+
+```sql
+-- Step 1: Close existing active records that have changes
+MERGE INTO main.gold.dim_customer AS target
+USING (
+    SELECT s.*
+    FROM main.silver.customers s
+    JOIN main.gold.dim_customer t
+    ON s.customer_id = t.customer_id
+    WHERE t.is_current = true
+      AND (s.name != t.name OR s.email != t.email OR s.address != t.address)
+) AS changes
+ON target.customer_id = changes.customer_id AND target.is_current = true
+WHEN MATCHED THEN
+    UPDATE SET
+        target.is_current = false,
+        target.end_date   = current_timestamp();
+
+-- Step 2: Insert new version for changed + brand new records
+INSERT INTO main.gold.dim_customer
+SELECT customer_id, name, email, address,
+       current_timestamp() AS start_date,
+       NULL                AS end_date,
+       true                AS is_current
+FROM main.silver.customers s
+WHERE NOT EXISTS (
+    SELECT 1 FROM main.gold.dim_customer t
+    WHERE t.customer_id = s.customer_id
+      AND t.is_current = true
+      AND t.name = s.name AND t.email = s.email AND t.address = s.address
+);
+```
+
+| | SCD Type 1 | SCD Type 2 |
+|--|-----------|-----------|
+| History | No — old values overwritten | Yes — old rows preserved with `is_current = false` |
+| Table size | Stable (same row count) | Grows (new row per change) |
+| Query complexity | Simple (always current) | Must filter `WHERE is_current = true` |
+| Use case | Dimensions where history doesn't matter | Audit trail, regulatory, analytics requiring point-in-time |
+
+---
+
+## 3.14 Data Quality Checks and Validation
 
 ### LDP Expectations (declarative data quality)
 
@@ -782,7 +1024,7 @@ invalid.write.mode("append").saveAsTable("main.quarantine.orders_rejected")
 
 ---
 
-## 3.10 Common Exam Traps
+## 3.15 Common Exam Traps
 
 | Trap | Correct answer |
 |------|---------------|
@@ -794,3 +1036,8 @@ invalid.write.mode("append").saveAsTable("main.quarantine.orders_rejected")
 | "AQE needs to be enabled manually" | False — AQE is on by default in DBR 7.3+ |
 | "`approx_count_distinct` is always less accurate than `countDistinct`" | True, but it's much faster and scales better; `rsd` parameter controls accuracy |
 | "Streaming table = materialized view" | False — streaming tables receive streaming data; materialized views are batch-refreshed aggregations |
+| "Global temp views are accessed by name directly" | False — must use `global_temp.view_name` prefix |
+| "Temp views persist across cluster restarts" | False — temp views are session-scoped; global temp views are cluster-scoped but still cleared on restart |
+| "`coalesce()` can increase the number of partitions" | False — `coalesce()` can only decrease; use `repartition()` to increase |
+| "CTEs cache their results in Spark" | False — CTEs are syntactic sugar; the query is inlined during optimization |
+| "PIVOT works without an aggregate function" | False — PIVOT requires an aggregate (`SUM`, `COUNT`, `AVG`, etc.) |
