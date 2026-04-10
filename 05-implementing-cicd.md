@@ -485,3 +485,16 @@ password = dbutils.secrets.get(scope="my-scope", key="db-password")
 | "Databricks Repos requires a separate license" | False — included with Databricks workspace |
 | "`databricks bundle deploy` always redeploys everything" | False — it's idempotent and only updates changed resources |
 | "Secrets can be stored in `databricks.yml`" | Never — only references (`{{secrets/scope/key}}`); actual values stay in Databricks Secrets |
+
+---
+
+## Official Databricks Documentation Links
+
+- [Databricks Repos (Git Folders)](https://docs.databricks.com/repos/index.html)
+- [Databricks Asset Bundles](https://docs.databricks.com/dev-tools/bundles/index.html)
+- [Bundle Configuration (databricks.yml)](https://docs.databricks.com/dev-tools/bundles/settings.html)
+- [Databricks CLI](https://docs.databricks.com/dev-tools/cli/index.html)
+- [CI/CD with Databricks](https://docs.databricks.com/dev-tools/ci-cd/ci-cd-setup.html)
+- [Service Principals](https://docs.databricks.com/admin/users-groups/service-principals.html)
+- [Secrets Management](https://docs.databricks.com/security/secrets/index.html)
+- [GitHub Actions for Databricks](https://docs.databricks.com/dev-tools/ci-cd/ci-cd-github.html)

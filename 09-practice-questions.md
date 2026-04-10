@@ -486,3 +486,13 @@ UC-enforced row filters apply regardless of access method — notebooks, SQL War
 | 28–31 correct | Good foundation — review missed domains |
 | 24–27 correct | Needs more study — focus on weak areas |
 | < 24 correct | Review all sections before attempting the exam |
+
+---
+
+## Official Databricks Documentation Links
+
+- [Databricks Certified Data Engineer Associate — Exam Guide](https://www.databricks.com/learn/certification/data-engineer-associate)
+- [Databricks Free Training & Academy](https://www.databricks.com/learn/training)
+- [Databricks Practice Exams](https://www.databricks.com/learn/certification/data-engineer-associate#practice)
+- [Databricks Documentation Home](https://docs.databricks.com/)
+- [Databricks Community Edition (Free Tier)](https://community.cloud.databricks.com/)

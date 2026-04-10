@@ -243,3 +243,25 @@ INSERT OVERWRITE table SELECT * FROM source;
 | 28 | "`dbutils.notebook.exit()` can return any data type" | No — only returns a string |
 | 29 | "`%pip install` affects all notebooks on the cluster" | No — it's session-scoped (one notebook) |
 | 30 | "`append` output mode works with streaming aggregations" | No — aggregations need `complete` or `update` mode |
+
+---
+
+## Official Databricks Documentation Links
+
+- [Databricks Certified Data Engineer Associate — Exam Guide](https://www.databricks.com/learn/certification/data-engineer-associate)
+- [Databricks Documentation Home](https://docs.databricks.com/)
+- [Delta Lake Documentation](https://docs.databricks.com/delta/index.html)
+- [Unity Catalog Overview](https://docs.databricks.com/data-governance/unity-catalog/index.html)
+- [Auto Loader](https://docs.databricks.com/ingestion/auto-loader/index.html)
+- [Structured Streaming](https://docs.databricks.com/structured-streaming/index.html)
+- [Lakeflow Declarative Pipelines](https://docs.databricks.com/workflows/delta-live-tables/index.html)
+- [Lakeflow Jobs](https://docs.databricks.com/workflows/jobs/jobs.html)
+- [Databricks Asset Bundles](https://docs.databricks.com/dev-tools/bundles/index.html)
+- [Databricks CLI](https://docs.databricks.com/dev-tools/cli/index.html)
+- [Databricks Repos (Git Folders)](https://docs.databricks.com/repos/index.html)
+- [Spark UI and Debugging](https://docs.databricks.com/clusters/spark-ui.html)
+- [Compute Configuration](https://docs.databricks.com/clusters/index.html)
+- [Data Governance with Unity Catalog](https://docs.databricks.com/data-governance/index.html)
+- [dbutils Reference](https://docs.databricks.com/dev-tools/databricks-utils.html)
+- [Databricks SQL](https://docs.databricks.com/sql/index.html)
+- [Databricks Free Training & Academy](https://www.databricks.com/learn/training)

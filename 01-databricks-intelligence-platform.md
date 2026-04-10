@@ -560,3 +560,23 @@ Libraries:     Maven/PyPI/DBFS libraries installed on cluster
 | "CDF is enabled by default" | False — must explicitly set `delta.enableChangeDataFeed = true` |
 | "`CREATE TABLE IF NOT EXISTS` updates the table" | False — it's a no-op if the table exists; use `CREATE OR REPLACE TABLE` for idempotent recreation |
 | "Photon accelerates Python UDFs" | False — Photon only accelerates SQL/DataFrame operations, not Python UDFs or RDD ops |
+
+---
+
+## Official Databricks Documentation Links
+
+- [Delta Lake](https://docs.databricks.com/delta/index.html)
+- [Delta Lake Table Properties](https://docs.databricks.com/delta/table-properties.html)
+- [Delta Lake Time Travel](https://docs.databricks.com/delta/history.html)
+- [OPTIMIZE](https://docs.databricks.com/delta/optimize.html)
+- [VACUUM](https://docs.databricks.com/sql/language-manual/delta-vacuum.html)
+- [Liquid Clustering](https://docs.databricks.com/delta/clustering.html)
+- [Clone a Delta Table](https://docs.databricks.com/delta/clone.html)
+- [Schema Enforcement and Evolution](https://docs.databricks.com/delta/update-schema.html)
+- [Change Data Feed](https://docs.databricks.com/delta/delta-change-data-feed.html)
+- [Unity Catalog Overview](https://docs.databricks.com/data-governance/unity-catalog/index.html)
+- [Compute Configuration](https://docs.databricks.com/clusters/index.html)
+- [Serverless Compute](https://docs.databricks.com/serverless-compute/index.html)
+- [Photon Runtime](https://docs.databricks.com/runtime/photon.html)
+- [Instance Pools](https://docs.databricks.com/clusters/instance-pools/index.html)
+- [SQL Warehouses](https://docs.databricks.com/sql/admin/sql-endpoints.html)

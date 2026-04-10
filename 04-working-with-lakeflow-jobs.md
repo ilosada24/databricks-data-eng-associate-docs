@@ -508,3 +508,17 @@ dbutils.notebook.exit("success")   # return a value to the caller
 | "File arrival trigger processes all existing files" | False — only files that arrive AFTER the trigger is activated |
 | "`%run` passes parameters to the called notebook" | False — `%run` shares scope; use `dbutils.notebook.run()` for parameters |
 | "`dbutils.notebook.run()` shares variables with the caller" | False — it runs in an isolated scope; only returns a string via `dbutils.notebook.exit()` |
+
+---
+
+## Official Databricks Documentation Links
+
+- [Lakeflow Jobs](https://docs.databricks.com/workflows/jobs/jobs.html)
+- [Create and Run Jobs](https://docs.databricks.com/workflows/jobs/create-run-jobs.html)
+- [Job Task Types](https://docs.databricks.com/workflows/jobs/jobs-glossary.html)
+- [Task Dependencies (DAG)](https://docs.databricks.com/workflows/jobs/jobs-glossary.html#task-graph)
+- [Job Triggers — Scheduled, File Arrival, Table Update](https://docs.databricks.com/workflows/jobs/schedule-jobs.html)
+- [Repair and Re-run Jobs](https://docs.databricks.com/workflows/jobs/repair-job-failures.html)
+- [Task Values](https://docs.databricks.com/workflows/jobs/share-information-between-tasks.html)
+- [Notebook Orchestration — dbutils.notebook.run()](https://docs.databricks.com/notebooks/notebook-workflows.html)
+- [Job Notifications and Alerts](https://docs.databricks.com/workflows/jobs/job-notifications.html)

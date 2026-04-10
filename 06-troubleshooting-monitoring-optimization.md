@@ -452,3 +452,18 @@ df.cache().count()     # count() forces evaluation and fills cache
 | Slow shuffle joins | SQL tab → query plan (look for Exchange) | Missing broadcast or too many partitions | Broadcast small table; tune shuffle partitions |
 | Query not using partitions | SQL tab → FileScan (no PartitionFilters) | Predicate pushdown not working | Filter on partition column directly (not after cast) |
 | LDP pipeline failing | Pipeline event log | Schema change, expectation failure, source unavailable | Check event log for specific error |
+
+---
+
+## Official Databricks Documentation Links
+
+- [Spark UI](https://docs.databricks.com/clusters/spark-ui.html)
+- [Adaptive Query Execution (AQE)](https://docs.databricks.com/optimizations/aqe.html)
+- [Liquid Clustering](https://docs.databricks.com/delta/clustering.html)
+- [Predictive Optimization](https://docs.databricks.com/optimizations/predictive-optimization.html)
+- [OPTIMIZE](https://docs.databricks.com/delta/optimize.html)
+- [Query Execution Plans (EXPLAIN)](https://docs.databricks.com/sql/language-manual/sql-ref-syntax-qry-explain.html)
+- [Cluster Event Logs](https://docs.databricks.com/clusters/clusters-manage.html#event-log)
+- [Monitor Job Runs](https://docs.databricks.com/workflows/jobs/monitor-job-runs.html)
+- [Performance Tuning](https://docs.databricks.com/optimizations/index.html)
+- [Delta Cache](https://docs.databricks.com/optimizations/delta-cache.html)

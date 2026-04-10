@@ -1041,3 +1041,19 @@ invalid.write.mode("append").saveAsTable("main.quarantine.orders_rejected")
 | "`coalesce()` can increase the number of partitions" | False — `coalesce()` can only decrease; use `repartition()` to increase |
 | "CTEs cache their results in Spark" | False — CTEs are syntactic sugar; the query is inlined during optimization |
 | "PIVOT works without an aggregate function" | False — PIVOT requires an aggregate (`SUM`, `COUNT`, `AVG`, etc.) |
+
+---
+
+## Official Databricks Documentation Links
+
+- [PySpark DataFrame API](https://docs.databricks.com/pyspark/index.html)
+- [Joins in PySpark](https://docs.databricks.com/pyspark/joins.html)
+- [User-Defined Functions (UDFs)](https://docs.databricks.com/udf/index.html)
+- [Pandas UDFs (Vectorized UDFs)](https://docs.databricks.com/udf/pandas.html)
+- [Adaptive Query Execution (AQE)](https://docs.databricks.com/optimizations/aqe.html)
+- [Higher-Order Functions](https://docs.databricks.com/sql/language-manual/functions/higher-order-functions.html)
+- [PIVOT Clause](https://docs.databricks.com/sql/language-manual/sql-ref-syntax-qry-select-pivot.html)
+- [Medallion Architecture](https://docs.databricks.com/lakehouse/medallion.html)
+- [Views](https://docs.databricks.com/sql/language-manual/sql-ref-syntax-ddl-create-view.html)
+- [Materialized Views](https://docs.databricks.com/sql/language-manual/sql-ref-syntax-ddl-create-materialized-view.html)
+- [Window Functions](https://docs.databricks.com/sql/language-manual/functions/window-functions.html)

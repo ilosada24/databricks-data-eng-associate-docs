@@ -257,3 +257,17 @@ pdf = df.limit(10000).toPandas()    # safer: limit first
 | "`dbutils.notebook.exit()` accepts any data type" | False — it only accepts a **string** argument |
 | "Mounts are the recommended way to access cloud storage" | False — UC Volumes and External Locations are the modern replacement |
 | "`%run` can pass parameters to the called notebook" | False — `%run` shares scope; use `dbutils.notebook.run()` for parameters |
+
+---
+
+## Official Databricks Documentation Links
+
+- [dbutils Reference](https://docs.databricks.com/dev-tools/databricks-utils.html)
+- [dbutils.widgets](https://docs.databricks.com/dev-tools/databricks-utils.html#widgets-utility-dbutilswidgets)
+- [dbutils.fs](https://docs.databricks.com/dev-tools/databricks-utils.html#file-system-utility-dbutilsfs)
+- [dbutils.secrets](https://docs.databricks.com/dev-tools/databricks-utils.html#secrets-utility-dbutilssecrets)
+- [dbutils.notebook](https://docs.databricks.com/dev-tools/databricks-utils.html#notebook-utility-dbutilsnotebook)
+- [Notebook Workflows](https://docs.databricks.com/notebooks/notebook-workflows.html)
+- [Magic Commands](https://docs.databricks.com/notebooks/notebooks-use.html#mix-languages)
+- [%pip install in Notebooks](https://docs.databricks.com/libraries/notebooks-python-libraries.html)
+- [display() Function](https://docs.databricks.com/notebooks/visualizations/index.html)

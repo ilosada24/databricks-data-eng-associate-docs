@@ -626,3 +626,21 @@ def upsert_to_silver(batch_df, batch_id):
 | "`append` output mode works with aggregations" | False — aggregations need `complete` or `update` output mode |
 | "Watermarks guarantee no late data is lost" | False — data arriving after the watermark threshold is intentionally dropped |
 | "`foreachBatch` only works with Delta sinks" | False — `foreachBatch` can write to any sink (JDBC, API, multi-table, etc.) |
+
+---
+
+## Official Databricks Documentation Links
+
+- [Auto Loader](https://docs.databricks.com/ingestion/auto-loader/index.html)
+- [Auto Loader Schema Evolution](https://docs.databricks.com/ingestion/auto-loader/schema.html)
+- [Auto Loader File Detection Modes](https://docs.databricks.com/ingestion/auto-loader/file-detection-modes.html)
+- [COPY INTO](https://docs.databricks.com/sql/language-manual/delta-copy-into.html)
+- [Lakeflow Declarative Pipelines](https://docs.databricks.com/workflows/delta-live-tables/index.html)
+- [Lakeflow Declarative Pipelines — Expectations](https://docs.databricks.com/workflows/delta-live-tables/delta-live-tables-expectations.html)
+- [Structured Streaming](https://docs.databricks.com/structured-streaming/index.html)
+- [Structured Streaming Triggers](https://docs.databricks.com/structured-streaming/triggers.html)
+- [Streaming with Watermarks](https://docs.databricks.com/structured-streaming/watermarks.html)
+- [foreachBatch Sink](https://docs.databricks.com/structured-streaming/foreach.html)
+- [Lakeflow Connect](https://docs.databricks.com/ingestion/lakeflow-connect/index.html)
+- [Upload Data to Volumes](https://docs.databricks.com/ingestion/file-upload/index.html)
+- [JDBC/ODBC Data Sources](https://docs.databricks.com/external-data/jdbc.html)

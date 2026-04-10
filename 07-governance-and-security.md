@@ -610,3 +610,19 @@ DENY SELECT ON TABLE t TO alice;
 | "A user needs USE CATALOG + USE SCHEMA to read a table" | True — both are required in addition to SELECT on the table |
 | "Data lineage must be manually configured" | False — UC captures lineage automatically for SQL and PySpark operations |
 | "One metastore can be shared by multiple workspaces" | True — all workspaces in the same region share one metastore |
+
+---
+
+## Official Databricks Documentation Links
+
+- [Unity Catalog Overview](https://docs.databricks.com/data-governance/unity-catalog/index.html)
+- [Managed and External Tables](https://docs.databricks.com/data-governance/unity-catalog/create-tables.html)
+- [Volumes](https://docs.databricks.com/data-governance/unity-catalog/create-volumes.html)
+- [GRANT, REVOKE, DENY](https://docs.databricks.com/sql/language-manual/sql-ref-syntax-ddl-grant.html)
+- [Unity Catalog Privileges](https://docs.databricks.com/data-governance/unity-catalog/manage-privileges/privileges.html)
+- [Column Masking](https://docs.databricks.com/data-governance/unity-catalog/column-masking.html)
+- [Row-Level Security (Row Filters)](https://docs.databricks.com/data-governance/unity-catalog/row-filters.html)
+- [Attribute-Based Access Control (ABAC)](https://docs.databricks.com/data-governance/unity-catalog/abac.html)
+- [Data Lineage](https://docs.databricks.com/data-governance/unity-catalog/data-lineage.html)
+- [Audit Logs](https://docs.databricks.com/admin/account-settings/audit-logs.html)
+- [Service Principals](https://docs.databricks.com/admin/users-groups/service-principals.html)
